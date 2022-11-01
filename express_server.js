@@ -19,7 +19,7 @@ app.set("view engine", "ejs");
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL
-  res.redirect(`/urls/${shortURL}`); // Respond with 'Ok' (we will replace this)
+  res.redirect(`/urls/${shortURL}`);
 });
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -38,6 +38,13 @@ app.get("/u/:id", (req, res) => {
 const longURL = urlDatabase[id];
   res.redirect(longURL);
 });
+
+//delete
+app.post('/urls/:id/delete', (req, res) => {
+  const urlId = req.params.id;
+  delete urlDatabase[urlId];
+  res.redirect('/urls')
+})
 
 app.get("/", (req, res) => {
   res.send("Hello!");
