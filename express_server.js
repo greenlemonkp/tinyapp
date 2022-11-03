@@ -3,7 +3,7 @@ const app = express();
 const PORT = 8080; // default port 8080
 
 function generateRandomString() {
-  return Math.random().toString(36).slice(2, 8)
+  return Math.random().toString(36).slice(2, 8);
 }
 
 const urlDatabase = {
@@ -18,9 +18,25 @@ app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL
+  urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
+
+//update
+app.post('/urls/:id', (req, res) => {
+  const id = req.params.id;
+  const longURL = req.body.longURL;
+  urlDatabase[id] = longURL;
+  res.redirect('/urls');
+});
+
+//delete
+app.post('/urls/:id/delete', (req, res) => {
+  const urlId = req.params.id;
+  delete urlDatabase[urlId];
+  res.redirect('/urls');
+});
+
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
@@ -35,16 +51,10 @@ app.get("/urls/:id", (req, res) => {
 app.get("/u/:id", (req, res) => {
   let id = req.params.id;
 
-const longURL = urlDatabase[id];
+  const longURL = urlDatabase[id];
   res.redirect(longURL);
 });
 
-//delete
-app.post('/urls/:id/delete', (req, res) => {
-  const urlId = req.params.id;
-  delete urlDatabase[urlId];
-  res.redirect('/urls')
-})
 
 app.get("/", (req, res) => {
   res.send("Hello!");
