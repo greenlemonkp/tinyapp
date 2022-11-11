@@ -24,17 +24,16 @@
     <% if (user) { %>
         <form method = "POST" action ="/logout">
             <label>Logged in as: <%= user.email %>!</label>
-            <button type = "submit">Logout</button>
+            <button type="submit" class="btn btn-sm btn-outline-light ml-md-auto">Logout</button>
             
           </div>
         </form>
         
         <% } else {%>
-         <form method="POST" action="/login">
-        <label>Email: </label> 
-        <input type="text" name="email"/>
-        <input id ="button" type = "submit" />
-      </form>
+          <div class="navbar-nav">
+            <a class="nav-item nav-link" href="/login" >Login</a>
+            <a class="nav-item nav-link" href="/register" >Register</a>
+          </div>
       <% }%>
   </nav>
  

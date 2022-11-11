@@ -2,12 +2,15 @@ const express = require("express");
 const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8080; // default port 8080
+
+//helper functions
 const {
   getUserByEmail,
-  generateRandomString
+  generateRandomString,
+  passwordCheck
 } = require("./helper");
 
-
+//Store users
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -34,11 +37,11 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 
 
-
+//Register New user
 app.post("/register", (req, res) => {
-  let randomId = generateRandomString();
-  let email = req.body.email;
-  let password = req.body.password;
+  const randomId = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
   if (email.length === 0 || password.length === 0) {
     return res.status(400).send("Email and Password cannot be empty");
   }
@@ -46,6 +49,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Email already exists");
   }
   users[randomId] = {
+    id: randomId,
     email: email,
     password: password
   };
@@ -75,16 +79,45 @@ app.post('/urls/:id/delete', (req, res) => {
 });
 
 
-//cookie
+//login cookie
 app.post('/login', (req, res) => {
-  res.cookie('user_id', req.body.username);
-  return res.redirect('/urls');
+  const email = req.body.email;
+  const password = req.body.password;
+  const user = getUserByEmail(email, users)
+console.log(user)
+  if (!user) {
+    return res.status(403).send("Email doesn't exist");
+    
+  }
+ else {
+    if (passwordCheck(users, email, password)) {
+      res.cookie('user_id', user.id);
+      res.redirect("urls");
+      return
+    } 
+    res.cookie("user_id", user.id);
+   res.status(403).send("Incorrect password");
+  }
 });
+
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect(`/urls`);
+  res.redirect(`/login`);
 });
+
+
+app.get("/login", (req, res) => {
+  const userID = req.cookies && req.cookies.user_id;
+  const templateVars = {
+    user: users[userID] || null,
+  };
+  if (userID) {
+    res.redirect("/urls");
+  }
+  res.render("urls_login", templateVars)
+
+})
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]] };
