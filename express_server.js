@@ -7,7 +7,8 @@ const PORT = 8080; // default port 8080
 const {
   getUserByEmail,
   generateRandomString,
-  passwordCheck
+  passwordCheck,
+  urlsForUser
 } = require("./helper");
 
 //Store users
@@ -25,8 +26,14 @@ const users = {
 };
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
 
@@ -36,7 +43,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
-
+//POST methods
 //Register New user
 app.post("/register", (req, res) => {
   const randomId = generateRandomString();
@@ -58,23 +65,59 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
+  const userID = req.cookies && req.cookies.user_id;
+  const user = users[userID]
+  if (!user) {
+    return res.status(401).send('Please login to use ShortURL!');
+  };
+
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {
+  longURL: req.body.longURL,
+  userID: req.cookies.user_id}
+
   res.redirect(`/urls/${shortURL}`);
 });
 
 //update
 app.post('/urls/:id', (req, res) => {
   const id = req.params.id;
+  const urlTar = urlDatabase[req.params.id]
+
+
+  if(!userID) {
+    return res.status(401).send("Log in first!")
+  }
+
+if(!urlTar) {
+  return res.status(404).send("URL does not exist")
+}
+if(urlTar.userID !== userID) {
+  return res.status(401).send("You do not have access")
+}
   const longURL = req.body.longURL;
-  urlDatabase[id] = longURL;
+  urlDatabase[id].longURL = longURL;
   res.redirect('/urls');
 });
 
 //delete
 app.post('/urls/:id/delete', (req, res) => {
   const urlId = req.params.id;
-  delete urlDatabase[urlId];
+  const urlTar = urlDatabase[req.params.id]
+
+
+  if(!userID) {
+    return res.status(401).send("Log in first!")
+  }
+
+if(!urlTar) {
+  return res.status(404).send("URL does not exist")
+}
+if(urlTar.userID !== userID) {
+  return res.status(401).send("You do not have access")
+}
+
+  delete urlDatabase[urlId].longURL;
   res.redirect('/urls');
 });
 
@@ -84,7 +127,7 @@ app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const user = getUserByEmail(email, users)
-console.log(user)
+
   if (!user) {
     return res.status(403).send("Email doesn't exist");
     
@@ -106,47 +149,105 @@ app.post("/logout", (req, res) => {
   res.redirect(`/login`);
 });
 
+//GET methods
+//Main
+app.get('/', (req, res) => {
+  const userID = req.cookies && req.cookies.user_id;
+
+  if (userID) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
+});
 
 app.get("/login", (req, res) => {
   const userID = req.cookies && req.cookies.user_id;
+
   const templateVars = {
     user: users[userID] || null,
   };
   if (userID) {
-    res.redirect("/urls");
+    return res.redirect("/urls"); 
   }
   res.render("urls_login", templateVars)
 
 })
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]] };
+  const userID = req.cookies && req.cookies.user_id;
+  const user = users[userID]
+
+  if (!user) {
+    return res.redirect("/login"); 
+  }
+  const urls = urlsForUser (userID, urlDatabase);
+  const templateVars = {urls, user};
   res.render("urls_index", templateVars);
 });
+
 app.get("/urls/new", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]] };
+  const userID = req.cookies && req.cookies.user_id;
+  const user = users[userID]
+
+  if (!user) {
+    return res.redirect("/login"); 
+  } 
+
+  const templateVars = { urls: urlDatabase, user };
 
   res.render("urls_new", templateVars);
 });
+
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user: users[req.cookies["user_id"]] };
+  const userID = req.cookies.user_id;
+   const urlTar = urlDatabase[req.params.id]
+
+
+  if(!userID) {
+    return res.status(401).send("Log in first!")
+  }
+
+if(!urlTar) {
+  return res.status(404).send("URL does not exist")
+}
+if(urlTar.userID !== userID) {
+  return res.status(401).send("You do not have access")
+}
+const templateVars = { 
+  id: req.params.id, 
+  longURL: urlTar.longURL, 
+  user: users[userID]
+};
+
   res.render("urls_show", templateVars);
 });
+
 app.get("/u/:id", (req, res) => {
   let id = req.params.id;
+  const longURL = urlDatabase[id].longURL;
 
-  const longURL = urlDatabase[id];
+  if (!longURL) {
+    return res.send("<h1>Invalid ID!</h1>");
+  }
   res.redirect(longURL);
 });
+
 app.get("/register", (req, res) => {
-  const templateVars = { user: users[req.cookies["user_id"]] };
+  const userID = req.cookies && req.cookies.user_id;
+  const user = users[userID]
+
+   const templateVars = { user };
+
+  if (userID) {
+    return res.redirect("/urls"); 
+  }
+
 
   res.render("urls_register", templateVars);
 });
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
