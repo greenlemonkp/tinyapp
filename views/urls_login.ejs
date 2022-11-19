@@ -21,23 +21,14 @@
   <body>
     <%- include('partials/_headers') %>
 
-    <main style="margin: 1em;">
+    <main style="margin: 1em">
       <h3>Login</h3>
       <form class="form-vertical" action="/login" method="POST">
-            <label for="InputEmail">Email Address</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="You Email"
-            />
-            <label for="InputPassword">Password</label>
-            <input
-               name="password"
-               type="password"
-               placeholder="PW"
-               />
-               <button type="submit" class="btn btn-primary">Submit</button>
-
+        <label for="InputEmail">Email Address</label>
+        <input type="email" name="email" placeholder="You Email" />
+        <label for="InputPassword">Password</label>
+        <input name="password" type="password" placeholder="PW" />
+        <button type="submit" class="btn btn-primary">Submit</button>
       </form>
     </main>
     <!-- Bootstrap JS -->
